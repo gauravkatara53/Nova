@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Nova",
   description:
     "AI-powered Job Application CRM — Manage cold emails, track referrals, analyze job descriptions, and accelerate your job search.",
-  url: process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "http://localhost:3000"),
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://nova-puce-rho.vercel.app",
   ogImage: "/og.png",
   links: {
     github: "https://github.com/coldreach-ai",
