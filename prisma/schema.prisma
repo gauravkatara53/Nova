@@ -1,0 +1,471 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// AUTH MODELS (NextAuth.js / Auth.js)
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  resumes       Resume[]
+  contacts      Contact[]
+  coldEmails    ColdEmail[]
+  applications  JobApplication[]
+  reminders     Reminder[]
+  templates     EmailTemplate[]
+  aiHistory     AIHistory[]
+  notifications Notification[]
+  settings      Settings?
+  companies     Company[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================================
+// RESUME MODELS
+// ============================================================================
+
+model Resume {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  fileUrl     String?
+  fileName    String?
+  rawText     String?  @db.Text
+  summary     String?  @db.Text
+  experience  Json?    // Array of experience objects
+  education   Json?    // Array of education objects
+  projects    Json?    // Array of project objects
+  techStack   String[] // Array of tech stack items
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills      ResumeSkill[]
+  coldEmails  ColdEmail[]
+  applications JobApplication[]
+
+  @@map("resumes")
+}
+
+model ResumeSkill {
+  id          String  @id @default(cuid())
+  resumeId    String
+  name        String
+  category    String? // e.g., "language", "framework", "tool", "soft-skill"
+  proficiency String? // e.g., "beginner", "intermediate", "advanced", "expert"
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("resume_skills")
+}
+
+// ============================================================================
+// COMPANY MODEL
+// ============================================================================
+
+model Company {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  domain      String?
+  logo        String?
+  description String?  @db.Text
+  website     String?
+  industry    String?
+  size        String?  // e.g., "1-50", "51-200", "201-1000", "1000+"
+  techStack   String[]
+  location    String?
+  founded     String?
+  funding     String?
+  culture     String?  @db.Text
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  coldEmails   ColdEmail[]
+  applications JobApplication[]
+
+  @@map("companies")
+}
+
+// ============================================================================
+// CONTACT CRM MODEL
+// ============================================================================
+
+enum ContactCategory {
+  REFERRAL
+  COLD_OUTREACH
+  RECRUITER
+  ALUMNI
+  FRIEND
+  HR
+  HIRING_MANAGER
+  OTHER
+}
+
+enum ContactStatus {
+  NO_CONTACT
+  CONTACTED
+  REPLIED
+  INTERVIEW
+  REJECTED
+  OFFER
+}
+
+model Contact {
+  id                   String          @id @default(cuid())
+  userId               String
+  name                 String
+  email                String?
+  linkedin             String?
+  phone                String?
+  companyId            String?
+  role                 String?
+  category             ContactCategory @default(OTHER)
+  relationshipStrength Int             @default(1) // 1-5
+  status               ContactStatus   @default(NO_CONTACT)
+  tags                 String[]
+  notes                String?         @db.Text
+  lastContactDate      DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  coldEmails ColdEmail[]
+
+  @@map("contacts")
+}
+
+// ============================================================================
+// COLD EMAIL MODEL
+// ============================================================================
+
+enum EmailCategory {
+  COLD_OUTREACH
+  REFERRAL_REQUEST
+  NETWORKING
+  RECRUITER
+  HIRING_MANAGER
+  ALUMNI
+}
+
+enum EmailStatus {
+  DRAFT
+  SENT
+  OPENED
+  REPLIED
+  FOLLOW_UP_SENT
+  INTERVIEW
+  REJECTED
+  OFFER
+  GHOSTED
+}
+
+enum EmailPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model ColdEmail {
+  id               String        @id @default(cuid())
+  userId           String
+  recipientName    String
+  recipientEmail   String
+  companyId        String?
+  contactId        String?
+  resumeId         String?
+  role             String?
+  category         EmailCategory @default(COLD_OUTREACH)
+  subject          String?
+  body             String?       @db.Text
+  shortVersion     String?       @db.Text
+  followUpEmail    String?       @db.Text
+  linkedInMessage  String?       @db.Text
+  status           EmailStatus   @default(DRAFT)
+  priority         EmailPriority @default(MEDIUM)
+  sentDate         DateTime?
+  followUpDate     DateTime?
+  notes            String?       @db.Text
+  jobLink          String?
+  jdText           String?       @db.Text
+  source           String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contact   Contact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  resume    Resume?    @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  followUps FollowUp[]
+
+  @@map("cold_emails")
+}
+
+// ============================================================================
+// FOLLOW-UP MODEL
+// ============================================================================
+
+enum FollowUpType {
+  FIRST
+  SECOND
+  FINAL
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  SKIPPED
+}
+
+enum FollowUpOutcome {
+  NO_REPLY
+  REPLIED
+  INTERESTED
+  NOT_INTERESTED
+  MEETING_SCHEDULED
+  BOUNCED
+}
+
+model FollowUp {
+  id               String            @id @default(cuid())
+  coldEmailId      String
+  type             FollowUpType      @default(FIRST)
+  dueDate          DateTime
+  status           FollowUpStatus    @default(PENDING)
+  outcome          FollowUpOutcome?
+  notes            String?           @db.Text
+  nextFollowUpDate DateTime?
+  generatedContent String?           @db.Text
+  sentDate         DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  coldEmail ColdEmail @relation(fields: [coldEmailId], references: [id], onDelete: Cascade)
+
+  @@map("follow_ups")
+}
+
+// ============================================================================
+// JOB APPLICATION MODEL
+// ============================================================================
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  OA
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+model JobApplication {
+  id           String            @id @default(cuid())
+  userId       String
+  companyId    String?
+  resumeId     String?
+  role         String
+  location     String?
+  salary       String?
+  jobLink      String?
+  jdText       String?           @db.Text
+  status       ApplicationStatus @default(WISHLIST)
+  appliedDate  DateTime?
+  deadline     DateTime?
+  hasReferral  Boolean           @default(false)
+  referralName String?
+  notes        String?           @db.Text
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  resume  Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@map("job_applications")
+}
+
+// ============================================================================
+// REMINDER MODEL
+// ============================================================================
+
+enum ReminderType {
+  FOLLOW_UP
+  INTERVIEW
+  DEADLINE
+  CUSTOM
+}
+
+model Reminder {
+  id          String       @id @default(cuid())
+  userId      String
+  type        ReminderType @default(CUSTOM)
+  title       String
+  description String?      @db.Text
+  dueDate     DateTime
+  isCompleted Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+// ============================================================================
+// EMAIL TEMPLATE MODEL
+// ============================================================================
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  userId    String?  // null = global template
+  name      String
+  category  String   // e.g., "referral", "recruiter", "follow-up"
+  subject   String
+  body      String   @db.Text
+  variables String[] // e.g., ["recipientName", "company", "role"]
+  isGlobal  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_templates")
+}
+
+// ============================================================================
+// AI HISTORY MODEL
+// ============================================================================
+
+model AIHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // e.g., "resume_parse", "jd_match", "email_generate", "chat"
+  prompt    String   @db.Text
+  response  String   @db.Text
+  metadata  Json?    // Additional context
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_history")
+}
+
+// ============================================================================
+// SETTINGS MODEL
+// ============================================================================
+
+model Settings {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  defaultFollowUpDays Int    @default(4)
+  emailSignature     String? @db.Text
+  aiModel            String  @default("gpt-4o-mini")
+  theme              String  @default("system")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+// ============================================================================
+// NOTIFICATION MODEL
+// ============================================================================
+
+enum NotificationType {
+  FOLLOW_UP
+  INTERVIEW
+  DEADLINE
+  RESUME_UPDATE
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String?          @db.Text
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}

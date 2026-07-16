@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nova
+
+> AI-Powered Job Application CRM — Manage cold emails, track referrals, analyze job descriptions, match resumes, and accelerate your job search.
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?style=flat-square&logo=tailwindcss)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma)
+
+## Features
+
+- 📊 **Dashboard** — Statistics, charts, activity feed
+- 📧 **Cold Email Manager** — Track outreach with auto follow-up scheduling
+- 👥 **Contact CRM** — Manage networking connections with relationship tracking
+- 🏢 **Company Database** — Auto-detect companies, logos, tech stacks
+- 📄 **Resume Manager** — Upload, parse, and manage multiple resumes
+- ✅ **Eligibility Checker** — AI-powered JD matching with gap analysis
+- 🤖 **AI Assistant** — Career chat, email generation, resume optimization
+- 📝 **Email Templates** — Pre-built and custom templates with variables
+- 🔔 **Follow-up Automation** — Smart reminders and AI-generated follow-ups
+- 📅 **Calendar** — Track interviews, deadlines, and follow-ups
+- 🔍 **Command Palette** — Quick navigation with ⌘K
+- 🌓 **Dark/Light Mode** — Beautiful theme support
+
+## Tech Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS v4 + Shadcn UI |
+| **Database** | PostgreSQL + Prisma ORM |
+| **Auth** | Auth.js v5 (NextAuth) |
+| **AI** | OpenAI GPT-4o |
+| **State** | Zustand + TanStack Query |
+| **Forms** | React Hook Form + Zod |
+| **Charts** | Recharts |
+| **Animations** | Framer Motion |
+| **Email** | Resend / Nodemailer |
+| **Uploads** | UploadThing |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database
+- OpenAI API key (for AI features)
+
+### Setup
 
 ```bash
+# Clone and install
+git clone <repo-url>
+cd coldreach-ai
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your database URL, API keys, etc.
+
+# Generate Prisma client and push schema
+npx prisma generate
+npx prisma db push
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See `.env.example` for all required variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `DATABASE_URL` — PostgreSQL connection string
+- `AUTH_SECRET` — NextAuth secret (`npx auth secret`)
+- `AUTH_GOOGLE_ID/SECRET` — Google OAuth credentials
+- `AUTH_GITHUB_ID/SECRET` — GitHub OAuth credentials
+- `OPENAI_API_KEY` — OpenAI API key
+- `UPLOADTHING_TOKEN` — UploadThing token
+- `RESEND_API_KEY` — Resend API key
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                  # Next.js App Router pages
+│   ├── (auth)/           # Login/register
+│   ├── (dashboard)/      # Protected dashboard pages
+│   └── api/              # API routes & cron jobs
+├── actions/              # Server Actions (CRUD)
+├── components/           # React components
+│   ├── ui/               # Shadcn UI components
+│   ├── layout/           # Sidebar, Navbar, CommandPalette
+│   ├── dashboard/        # Dashboard widgets
+│   └── shared/           # Reusable components
+├── config/               # App configuration
+├── hooks/                # Custom React hooks
+├── lib/                  # Utilities & services
+│   └── ai/               # AI service layer
+├── stores/               # Zustand state stores
+└── types/                # TypeScript types
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Optimized for Vercel:
 
-## Deploy on Vercel
+```bash
+npm run build
+# Deploy to Vercel
+vercel --prod
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
