@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     NEXTAUTH_URL: 'https://nova-puce-rho.vercel.app',
     AUTH_URL: 'https://nova-puce-rho.vercel.app',
     AUTH_TRUST_HOST: 'true',
+    AUTH_SECRET: 'nova-super-secret-key-12345-do-not-share-this-key',
   },
 };
 
