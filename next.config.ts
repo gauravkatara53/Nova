@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+  env: {
+    NEXTAUTH_URL: 'https://nova-puce-rho.vercel.app',
+    AUTH_URL: 'https://nova-puce-rho.vercel.app',
+    AUTH_TRUST_HOST: 'true',
+  },
 };
 
 export default nextConfig;
