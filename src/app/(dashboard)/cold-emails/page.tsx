@@ -181,6 +181,10 @@ export default function ColdEmailsPage() {
   };
 
   const handleOpenAddDialog = () => {
+    const today = new Date();
+    const followUp = new Date(today);
+    followUp.setDate(today.getDate() + 4);
+
     setFormState({
       recipientName: "",
       recipientEmail: "",
@@ -191,8 +195,8 @@ export default function ColdEmailsPage() {
       body: "",
       status: "DRAFT",
       priority: "MEDIUM",
-      sentDate: "",
-      followUpDate: "",
+      sentDate: today.toISOString().split('T')[0],
+      followUpDate: followUp.toISOString().split('T')[0],
       notes: "",
     });
     setIsEditing(false);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getContacts, createContact, updateContact, deleteContact } from "@/actions/contacts";
+import { getCompanies } from "@/actions/companies";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/shared/page-header";
@@ -108,6 +109,17 @@ export default function ContactsPage() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [companyFocus, setCompanyFocus] = useState(false);
+  const [roleFocus, setRoleFocus] = useState(false);
+
+  const SUGGESTED_ROLES = [
+    "SDE INTERN",
+    "SOFTWARE ENGINEER INTERN",
+    "SDE",
+    "SOFTWARE ENGINEER",
+    "AI ENGINEER",
+    "DATA ENGINEER"
+  ];
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -138,6 +150,11 @@ export default function ContactsPage() {
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts"],
     queryFn: () => getContacts(),
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => getCompanies(),
   });
 
   const createMutation = useMutation({
@@ -384,7 +401,23 @@ export default function ContactsPage() {
                     </div>
 
                     <div className="mt-3 flex items-center gap-2">
-                      {getContactStatusBadge(contact.status)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="focus:outline-none cursor-pointer hover:opacity-80 transition-opacity">
+                          {getContactStatusBadge(contact.status)}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {CONTACT_STATUSES.map(status => (
+                            <DropdownMenuItem
+                              key={status.value}
+                              onClick={() => {
+                                updateMutation.mutate({ id: contact.id, data: { status: status.value as any } });
+                              }}
+                            >
+                              {status.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Badge variant="outline" className="text-[10px]">
                         {CONTACT_CATEGORIES.find((c) => c.value === contact.category)?.label}
                       </Badge>
@@ -577,7 +610,25 @@ export default function ContactsPage() {
                       {CONTACT_CATEGORIES.find((c) => c.value === contact.category)?.label}
                     </Badge>
                   </TableCell>
-                  <TableCell>{getContactStatusBadge(contact.status)}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="focus:outline-none cursor-pointer hover:opacity-80 transition-opacity">
+                        {getContactStatusBadge(contact.status)}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {CONTACT_STATUSES.map(status => (
+                          <DropdownMenuItem
+                            key={status.value}
+                            onClick={() => {
+                              updateMutation.mutate({ id: contact.id, data: { status: status.value as any } });
+                            }}
+                          >
+                            {status.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                   <TableCell>
                     <RelationshipStars strength={contact.relationshipStrength} />
                   </TableCell>
@@ -624,7 +675,7 @@ export default function ContactsPage() {
       )}
 
       <Sheet open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <SheetContent className="sm:max-w-md md:max-w-lg h-full flex flex-col p-0">
+        <SheetContent className="sm:max-w-xl md:max-w-2xl h-full flex flex-col p-0">
           <SheetHeader className="p-6 pb-4 border-b">
             <SheetTitle>{isEditing ? "Edit Contact" : "Add Contact"}</SheetTitle>
             <SheetDescription>{isEditing ? "Update networking contact details" : "Add a new networking contact"}</SheetDescription>
@@ -652,23 +703,73 @@ export default function ContactsPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
+              <div className="grid gap-2 relative">
                 <Label htmlFor="contact-company">Company</Label>
                 <Input
                   id="contact-company"
                   placeholder="Google"
                   value={formState.companyName}
                   onChange={(e) => setFormState({ ...formState, companyName: e.target.value })}
+                  onFocus={() => setCompanyFocus(true)}
+                  onBlur={() => setTimeout(() => setCompanyFocus(false), 200)}
+                  autoComplete="off"
                 />
+                {companyFocus && formState.companyName.length >= 1 && (
+                  (() => {
+                    const filtered = companies.filter(c => 
+                      c.name.toLowerCase().includes(formState.companyName.toLowerCase()) && 
+                      c.name.toLowerCase() !== formState.companyName.toLowerCase()
+                    );
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div className="absolute z-50 w-full bg-popover text-popover-foreground border rounded-md shadow-md top-[68px] max-h-48 overflow-y-auto">
+                        {filtered.map(c => (
+                          <div
+                            key={c.id}
+                            className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                            onClick={() => setFormState({ ...formState, companyName: c.name })}
+                          >
+                            {c.name}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()
+                )}
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 relative">
                 <Label htmlFor="contact-role">Role</Label>
                 <Input
                   id="contact-role"
                   placeholder="Software Engineer"
                   value={formState.role}
                   onChange={(e) => setFormState({ ...formState, role: e.target.value })}
+                  onFocus={() => setRoleFocus(true)}
+                  onBlur={() => setTimeout(() => setRoleFocus(false), 200)}
+                  autoComplete="off"
                 />
+                {roleFocus && formState.role.length >= 1 && (
+                  (() => {
+                    const filtered = SUGGESTED_ROLES.filter(r => 
+                      r.toLowerCase().includes(formState.role.toLowerCase()) && 
+                      r.toLowerCase() !== formState.role.toLowerCase()
+                    );
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div className="absolute z-50 w-full bg-popover text-popover-foreground border rounded-md shadow-md top-[68px] max-h-48 overflow-y-auto">
+                        {filtered.map(r => (
+                          <div
+                            key={r}
+                            className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                            onClick={() => setFormState({ ...formState, role: r })}
+                          >
+                            {r}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
