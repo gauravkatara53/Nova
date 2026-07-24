@@ -42,7 +42,6 @@ export function CompanyLogo({
       </div>
     );
   }
-
   return (
     <img
       src={finalLogoUrl}
